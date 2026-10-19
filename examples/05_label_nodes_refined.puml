@@ -1,0 +1,99 @@
+@startuml
+' Refined label-as-node technique:
+'  - label nodes for intra-package links are declared INSIDE the package
+'  - direction hints (-right-/-down-) + link length position each label
+'  - [norank] keeps "back" edges from distorting the layer layout
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 45
+title 05 - ortho + label nodes (refined)
+
+skinparam rectangle<<lbl>> {
+  BorderColor transparent
+  BackgroundColor transparent
+  FontSize 11
+  FontColor #444444
+  Shadow false
+}
+hide <<lbl>> stereotype
+
+' $lbl(id, text)          declare a label node (call it inside the right package)
+' $via(a, id, b, dir, arr) route a -> label -> b ; dir positions the label relative to a
+!procedure $lbl($id, $text)
+  rectangle "$text" <<lbl>> as $id
+!endprocedure
+!procedure $via($a, $id, $b, $dir="down", $arr="-->")
+  $a -$dir- $id
+  $id $arr $b
+!endprocedure
+
+actor "Customer" as user
+actor "Operator" as ops
+$lbl(l_https, "HTTPS")
+$lbl(l_admin, "admin API")
+
+package "Edge" {
+  [Web Frontend] as web
+  [API Gateway] as gw
+  [Auth Service] as auth
+  $lbl(l_rest, "REST/JSON")
+  $lbl(l_token, "validate token")
+}
+
+package "Core Services" {
+  interface "REST" as orderApi
+  [Order Service] as order
+  [Payment Service] as pay
+  [Inventory Service] as inv
+  [Notification Service] as notif
+  $lbl(l_charge, "charge(order)")
+  $lbl(l_reserve, "reserve(items)")
+}
+
+package "Data" {
+  database "Orders DB" as odb
+  database "Inventory DB" as idb
+  queue "Event Bus" as bus
+  [Cache] as cache
+  $lbl(l_sql, "SQL")
+  $lbl(l_rt, "read-through")
+}
+
+cloud "External" {
+  [Payment Provider] as psp
+  [Mail Provider] as mail
+}
+
+' cross-package labels live at top level
+$lbl(l_write, "SQL write")
+$lbl(l_created, "OrderCreated")
+$lbl(l_3ds, "3DS / capture")
+$lbl(l_paid, "PaymentDone")
+$lbl(l_consume, "consume events")
+$lbl(l_smtp, "SMTP")
+
+$via(user, l_https, web)
+$via(ops, l_admin, gw)
+$via(web, l_rest, gw)
+$via(gw, l_token, auth, "left")
+gw --> orderApi
+orderApi - order
+$via(order, l_charge, pay, "right")
+$via(order, l_reserve, inv)
+$via(order, l_write, odb)
+$via(order, l_created, bus)
+$via(inv, l_sql, idb)
+$via(inv, l_rt, cache, "right")
+$via(pay, l_3ds, psp)
+$via(pay, l_paid, bus, "down", "..>")
+' back edge: -up- reverses the rank direction instead of dragging the label to the top
+bus -up- l_consume
+l_consume -up-> notif
+$via(notif, l_smtp, mail)
+
+note right of l_3ds
+  retries: 3
+  timeout: 2s
+end note
+note bottom of bus : Kafka topic\norders.v1
+@enduml

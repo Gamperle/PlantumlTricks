@@ -1,0 +1,50 @@
+@startuml
+skinparam linetype polyline
+skinparam nodesep 90
+skinparam ranksep 90
+title 07 - linetype polyline (labels stay attached)
+actor "Customer" as user
+actor "Operator" as ops
+package "Edge" {
+  [API Gateway] as gw
+  [Web Frontend] as web
+  [Auth Service] as auth
+}
+package "Core Services" {
+  [Order Service] as order
+  [Payment Service] as pay
+  [Inventory Service] as inv
+  [Notification Service] as notif
+  interface "REST" as orderApi
+}
+package "Data" {
+  database "Orders DB" as odb
+  database "Inventory DB" as idb
+  queue "Event Bus" as bus
+  [Cache] as cache
+}
+cloud "External" {
+  [Payment Provider] as psp
+  [Mail Provider] as mail
+}
+user --> web : HTTPS
+web --> gw : REST/JSON
+ops --> gw : admin API
+gw --> auth : validate token
+gw --> orderApi
+orderApi - order
+order --> pay : charge(order)
+order --> inv : reserve(items)
+order --> odb : SQL write
+order --> bus : OrderCreated
+inv --> idb : SQL
+inv --> cache : read-through
+pay --> psp : 3DS / capture
+bus --> notif : consume events
+notif --> mail : SMTP
+pay ..> bus : PaymentDone
+note on link
+  retries: 3
+  timeout: 2s
+end note
+@enduml

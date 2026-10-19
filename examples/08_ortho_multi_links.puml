@@ -1,0 +1,126 @@
+@startuml
+' 10 components, several parallel links between the same pairs, ortho lines.
+' Each link label is its own borderless node, so parallel links get separate,
+' non-overlapping routes and every label/note stays positionable.
+skinparam linetype ortho
+skinparam nodesep 35
+skinparam ranksep 40
+skinparam componentStyle uml2
+title 08 - ortho, 10 components, multiple links per pair
+
+skinparam rectangle<<lbl>> {
+  BorderColor transparent
+  BackgroundColor transparent
+  FontSize 10
+  FontColor #444444
+  Shadow false
+}
+hide <<lbl>> stereotype
+
+!procedure $lbl($id, $text)
+  rectangle "$text" <<lbl>> as $id
+!endprocedure
+!procedure $via($a, $id, $b, $dir="down", $arr="-->")
+  $a -$dir- $id
+  $id $arr $b
+!endprocedure
+
+package "Frontend" {
+  [Web App] as web
+  [Mobile BFF] as bff
+}
+package "Services" {
+  [API Gateway] as gw
+  [Order Service] as order
+  [Billing Service] as bill
+  [Catalog Service] as cat
+  [Search Service] as search
+  ' labels of links that stay inside this package
+  $lbl(l_g1, "create")
+  $lbl(l_g2, "cancel")
+  $lbl(l_g3, "status")
+  $lbl(l_g4, "browse")
+  $lbl(l_g5, "query")
+  $lbl(l_o1, "invoice()")
+  $lbl(l_o2, "refund()")
+  $lbl(l_o3, "paid callback")
+  $lbl(l_c1, "reindex")
+  $lbl(l_c2, "suggest")
+}
+package "Platform" {
+  queue "Event Bus" as bus
+  database "Main DB" as db
+  [Object Storage] as s3
+  ' labels of incoming links, kept inside so they sit right above their target
+  $lbl(l_e1, "OrderCreated")
+  $lbl(l_e2, "OrderCancelled")
+  $lbl(l_e3, "InvoiceIssued")
+  $lbl(l_e4, "ProductChanged")
+  $lbl(l_d1, "write orders")
+  $lbl(l_d2, "read orders")
+  $lbl(l_d3, "outbox poll")
+  $lbl(l_d4, "write invoices")
+  $lbl(l_d5, "read products")
+  $lbl(l_s1, "PDF invoices")
+  $lbl(l_s2, "product images")
+}
+
+' ---------- Web App <-> API Gateway (3 links)
+$lbl(l_w1, "REST /orders")
+$lbl(l_w2, "GraphQL")
+$lbl(l_w3, "WebSocket push")
+$via(web, l_w1, gw)
+$via(web, l_w2, gw)
+$via(gw, l_w3, web, "up", "-up->")
+
+' ---------- Mobile BFF <-> API Gateway (2 links)
+$lbl(l_m1, "REST /catalog")
+$lbl(l_m2, "gRPC /orders")
+$via(bff, l_m1, gw)
+$via(bff, l_m2, gw)
+
+' ---------- API Gateway -> Order Service (3 links)
+$via(gw, l_g1, order)
+$via(gw, l_g2, order)
+$via(gw, l_g3, order)
+
+' ---------- API Gateway -> Catalog / Search
+$via(gw, l_g4, cat)
+$via(gw, l_g5, search)
+
+' ---------- Order <-> Billing (3 links, both directions)
+$via(order, l_o1, bill, "right")
+$via(order, l_o2, bill, "right", "..>")
+$via(bill, l_o3, order, "left")
+
+' ---------- Catalog <-> Search (2 links)
+$via(cat, l_c1, search, "right")
+$via(search, l_c2, cat, "left", "..>")
+
+' ---------- Services -> Event Bus (several publishers, 2 links from Order)
+$via(order, l_e1, bus)
+$via(order, l_e2, bus)
+$via(bill, l_e3, bus)
+$via(cat, l_e4, bus)
+
+' ---------- Event Bus -> Search (consumer)
+$lbl(l_e5, "consume ProductChanged")
+$via(bus, l_e5, search, "up", "-up->")
+
+' ---------- Main DB (3 links from Order, 1 each from Billing/Catalog)
+$via(order, l_d1, db)
+$via(order, l_d2, db, "down", "..>")
+$via(order, l_d3, db, "down", "..>")
+$via(bill, l_d4, db)
+$via(cat, l_d5, db, "down", "..>")
+
+' ---------- Object Storage (2 links)
+$via(bill, l_s1, s3)
+$via(cat, l_s2, s3)
+
+note right of l_o3
+  async webhook
+  at-least-once
+end note
+note left of l_d3 : every 5s
+@enduml

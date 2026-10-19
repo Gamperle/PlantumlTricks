@@ -1,0 +1,41 @@
+@startuml
+' Native (no helper nodes) knobs that still have an effect under linetype ortho
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 70
+title 06 - native label/note knobs under ortho
+
+[A1] as a1
+[B1] as b1
+[A2] as a2
+[B2] as b2
+[A3] as a3
+[B3] as b3
+[A4] as a4
+[B4] as b4
+[A5] as a5
+[B5] as b5
+
+' 1) plain label (xlabel, placed by graphviz)
+a1 --> b1 : plain label
+
+' 2) padding with non-breaking spaces pushes the text sideways
+a2 --> b2 : <U+00A0><U+00A0><U+00A0><U+00A0><U+00A0><U+00A0><U+00A0><U+00A0>padded right
+
+' 3) leading/trailing empty lines push the text up/down
+a3 --> b3 : \n\n\nshifted down
+
+' 4) head / tail labels (multiplicity slots) next to the arrow ends
+a4 "tail" --> "head" b4
+
+' 5) note positions on links
+a5 --> b5
+note right on link : note right on link
+
+a1 --> a2
+note left on link : note left on link
+a3 --> a4
+note top on link : note top on link
+b3 --> b4
+note bottom on link : note bottom on link
+@enduml

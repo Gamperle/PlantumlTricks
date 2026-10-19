@@ -1,0 +1,74 @@
+@startuml
+' Technique: every edge label is a real (borderless) node in the middle of the link.
+' Ortho routing then treats labels as obstacles -> no overlaps, and you position
+' them with direction hints (-right-, -down-) and link length (-- vs ---).
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 50
+title 04 - ortho + labels as nodes
+
+' Style for the "label nodes": no border, transparent, small font
+skinparam rectangle<<lbl>> {
+  BorderColor transparent
+  BackgroundColor transparent
+  FontSize 11
+  Shadow false
+}
+hide <<lbl>> stereotype
+
+' Helper: link with a positionable label. dir = right/left/up/down
+!procedure $lnk($from, $to, $text, $dir="down", $arrow="-->")
+  rectangle "$text" <<lbl>> as $from##_##$to
+  $from -$dir- $from##_##$to
+  $from##_##$to $arrow $to
+!endprocedure
+
+actor "Customer" as user
+actor "Operator" as ops
+package "Edge" {
+  [API Gateway] as gw
+  [Web Frontend] as web
+  [Auth Service] as auth
+}
+package "Core Services" {
+  [Order Service] as order
+  [Payment Service] as pay
+  [Inventory Service] as inv
+  [Notification Service] as notif
+  interface "REST" as orderApi
+}
+package "Data" {
+  database "Orders DB" as odb
+  database "Inventory DB" as idb
+  queue "Event Bus" as bus
+  [Cache] as cache
+}
+cloud "External" {
+  [Payment Provider] as psp
+  [Mail Provider] as mail
+}
+
+$lnk(user, web, "HTTPS")
+$lnk(web, gw, "REST/JSON")
+$lnk(ops, gw, "admin API")
+$lnk(gw, auth, "validate token", "right")
+gw --> orderApi
+orderApi - order
+$lnk(order, pay, "charge(order)", "right")
+$lnk(order, inv, "reserve(items)")
+$lnk(order, odb, "SQL write")
+$lnk(order, bus, "OrderCreated")
+$lnk(inv, idb, "SQL")
+$lnk(inv, cache, "read-through")
+$lnk(pay, psp, "3DS / capture")
+$lnk(bus, notif, "consume events", "right")
+$lnk(notif, mail, "SMTP")
+$lnk(pay, bus, "PaymentDone", "down", "..>")
+
+' A "note on link" is now just a note on the label node -> fully positionable
+note right of pay_psp
+  retries: 3
+  timeout: 2s
+end note
+note left of bus : Kafka topic\norders.v1
+@enduml
