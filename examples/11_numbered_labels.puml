@@ -1,0 +1,77 @@
+@startuml
+' Native ortho labels, but short: numbers on the links, meaning in a legend.
+' Short xlabels rarely collide, and parallel links stay distinguishable.
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 60
+skinparam ArrowFontSize 11
+skinparam ArrowFontStyle bold
+skinparam ArrowFontColor #2a7ab0
+title 11 - numbered labels + legend (native ortho)
+
+package "Frontend" {
+  [Web App] as web
+  [Mobile BFF] as bff
+}
+package "Services" {
+  [API Gateway] as gw
+  [Order Service] as order
+  [Billing Service] as bill
+  [Catalog Service] as cat
+  [Search Service] as search
+}
+package "Platform" {
+  queue "Event Bus" as bus
+  database "Main DB" as db
+  [Object Storage] as s3
+}
+
+web --> gw : 1
+web --> gw : 2
+gw --> web : 3
+bff --> gw : 4
+bff --> gw : 5
+gw --> order : 6
+gw --> order : 7
+gw --> cat : 8
+gw --> search : 9
+order --> bill : 10
+bill --> order : 11
+cat --> search : 12
+order --> bus : 13
+bill --> bus : 14
+cat --> bus : 15
+bus --> search : 16
+order --> db : 17
+order ..> db : 18
+bill --> db : 19
+cat ..> db : 20
+bill --> s3 : 21
+cat --> s3 : 22
+
+legend right
+  |= # |= Link |= Meaning |
+  | 1 | Web → Gateway | REST /orders |
+  | 2 | Web → Gateway | GraphQL |
+  | 3 | Gateway → Web | WebSocket push |
+  | 4 | BFF → Gateway | REST /catalog |
+  | 5 | BFF → Gateway | gRPC /orders |
+  | 6 | Gateway → Order | create / cancel |
+  | 7 | Gateway → Order | status |
+  | 8 | Gateway → Catalog | browse |
+  | 9 | Gateway → Search | query |
+  | 10 | Order → Billing | invoice() / refund() |
+  | 11 | Billing → Order | paid callback (async, at-least-once) |
+  | 12 | Catalog → Search | reindex |
+  | 13 | Order → Bus | OrderCreated / OrderCancelled |
+  | 14 | Billing → Bus | InvoiceIssued |
+  | 15 | Catalog → Bus | ProductChanged |
+  | 16 | Bus → Search | consume ProductChanged |
+  | 17 | Order → DB | write orders |
+  | 18 | Order → DB | read orders, outbox poll (5s) |
+  | 19 | Billing → DB | write invoices |
+  | 20 | Catalog → DB | read products |
+  | 21 | Billing → Storage | PDF invoices |
+  | 22 | Catalog → Storage | product images |
+endlegend
+@enduml

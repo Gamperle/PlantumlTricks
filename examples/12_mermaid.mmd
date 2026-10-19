@@ -1,0 +1,52 @@
+---
+title: 12 - Mermaid + ELK, right-angle lines, labels stay on edges
+config:
+  layout: elk
+  flowchart:
+    curve: step
+  elk:
+    nodePlacementStrategy: BRANDES_KOEPF
+---
+flowchart TB
+  %% No subgraphs on purpose: with subgraphs, both ELK and dagre route
+  %% cross-subgraph links badly (long detours, Platform pushed sideways).
+  %% Frontend
+  web[Web App]
+  bff[Mobile BFF]
+  %% Services
+  gw[API Gateway]
+  order[Order Service]
+  bill[Billing Service]
+  cat[Catalog Service]
+  search[Search Service]
+  %% Platform
+  bus[[Event Bus]]
+  db[(Main DB)]
+  s3[Object Storage]
+
+  web -->|REST /orders| gw
+  web -->|GraphQL| gw
+  gw -->|WebSocket push| web
+  bff -->|REST /catalog| gw
+  bff -->|gRPC /orders| gw
+  gw -->|create| order
+  gw -->|cancel| order
+  gw -->|status| order
+  gw -->|browse| cat
+  gw -->|query| search
+  order -->|"invoice()"| bill
+  order -.->|"refund()"| bill
+  bill -->|paid callback| order
+  cat -->|reindex| search
+  order -->|OrderCreated| bus
+  order -->|OrderCancelled| bus
+  bill -->|InvoiceIssued| bus
+  cat -->|ProductChanged| bus
+  bus -->|consume ProductChanged| search
+  order -->|write orders| db
+  order -.->|read orders| db
+  order -.->|outbox poll 5s| db
+  bill -->|write invoices| db
+  cat -.->|read products| db
+  bill -->|PDF invoices| s3
+  cat -->|product images| s3

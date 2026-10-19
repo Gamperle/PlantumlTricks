@@ -1,0 +1,48 @@
+@startuml
+' Invisible ports via <style>. The port NAME stays visible and becomes a label
+' pinned to the exact point where the link leaves/enters the component.
+' Ports tagged <<inv>> are hidden completely (box and name).
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 70
+title 10 - invisible ports, port names as pinned labels
+
+<style>
+port {
+  LineColor transparent
+  BackGroundColor transparent
+  FontSize 10
+  FontColor #444444
+}
+.inv {
+  FontColor transparent
+}
+</style>
+hide <<inv>> stereotype
+
+component "Web App" as web {
+  portout "REST /orders" as w1
+  portout "GraphQL" as w2
+  port "WS push" as w3
+}
+component "API Gateway" as gw {
+  portin "in" as g_in1 <<inv>>
+  portin "in" as g_in2 <<inv>>
+  port "out" as g_out <<inv>>
+  portout "create" as g1
+  portout "cancel" as g2
+  portout "status" as g3
+}
+component "Order Service" as order {
+  portin "in" as o1 <<inv>>
+  portin "in" as o2 <<inv>>
+  portin "in" as o3 <<inv>>
+}
+
+w1 --> g_in1
+w2 --> g_in2
+g_out -up-> w3
+g1 --> o1
+g2 --> o2
+g3 ..> o3
+@enduml

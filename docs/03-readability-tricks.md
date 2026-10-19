@@ -1,6 +1,6 @@
 # 03 – Readability tricks
 
-Ordered by impact. Items 1–5 were verified with the examples in this repo; 6–12
+Ordered by impact. Items 1–5c were verified with the examples in this repo; 6–12
 are general PlantUML/Graphviz practice.
 
 ## Verified in this repo
@@ -13,6 +13,11 @@ are general PlantUML/Graphviz practice.
    For back edges compare `-up-` with `-[norank]-`.
 5. **Mute the labels.** Smaller grey font (`FontSize 10`, `FontColor #444444`) so
    labels read as annotations, not as components.
+5a. **Ports for parallel links.** One `portin`/`portout` per link gives each link its
+   own endpoint; invisible ports with visible names act as pinned labels ([05](05-ports.md)).
+5b. **Numbers + legend.** Short native labels rarely collide; the text goes into a
+   legend table ([06](06-numbered-labels.md)).
+5c. **Consider Mermaid + ELK** if UML notation is not required ([07](07-mermaid.md)).
 
 ## General practice
 

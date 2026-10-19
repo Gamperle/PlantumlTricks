@@ -7,5 +7,5 @@ set -euo pipefail
 server="${PLANTUML_SERVER:-http://localhost:8080}"
 fmt="${2:-png}"
 out="${1%.puml}.$fmt"
-curl -sf -X POST --data-binary @"$1" -H 'Content-Type: text/plain' "$server/$fmt" -o "$out"
+curl -sf -X POST --data-binary @"$1" -H 'Content-Type: text/plain; charset=utf-8' "$server/$fmt" -o "$out"
 echo "$out"

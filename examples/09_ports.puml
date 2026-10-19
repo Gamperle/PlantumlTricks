@@ -1,0 +1,22 @@
+@startuml
+' Ports: each parallel link gets its own attachment point on the component edge.
+' Left: visible ports. Right: same, ports made invisible via skinparam.
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 60
+title 09 - ports (portin/portout)
+
+component "Order Service" as order {
+  portout "create" as o_create
+  portout "cancel" as o_cancel
+  portout "status" as o_status
+}
+component "Billing Service" as bill {
+  portin "in1" as b_in1
+  portin "in2" as b_in2
+  portin "in3" as b_in3
+}
+o_create --> b_in1
+o_cancel --> b_in2
+o_status ..> b_in3
+@enduml
